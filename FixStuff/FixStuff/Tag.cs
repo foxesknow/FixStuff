@@ -31,35 +31,52 @@ namespace FixStuff
         public Tag(ReadOnlySpan<byte> data)
         {
             if(data.Length > Width) throw new ArgumentException("only values 0 to 99999 supported");
-            this = new(true, data);
+            
+            var length = data.Length;
+            m_Data[LengthIndex] = (byte)length;
+
+            for(var i = 0; i < length; i++)
+            {
+                var digit = data[i];
+                m_Data[i + AsciiOffset] = digit;
+                m_Value = (m_Value * 10) + (digit - (byte)'0');
+            }
         }
 
         /// <summary>
         /// Creates a tag from a string
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="text"></param>
         /// <exception cref="ArgumentException"></exception>
-        public Tag(string value)
+        public Tag(string text)
         {
-            ArgumentException.ThrowIfNullOrEmpty(value, nameof(value));
-            if(value.Length > Width) throw new ArgumentException("only values 0 to 99999 supported");
+            ArgumentException.ThrowIfNullOrEmpty(text, nameof(text));
 
-            Span<byte> buffer = stackalloc byte[value.Length];
-            for(int i = 0; i < value.Length; i++)
+            var length = text.Length;
+            if(length > Width) throw new ArgumentException("only values 0 to 99999 supported");
+
+            var value = 0;
+            Span<byte> buffer = stackalloc byte[text.Length];
+            for(int i = 0; i < length; i++)
             {
-                var c = value[i];
+                var c = text[i];
 
                 if(c >= '0' && c <= '9')
                 {
-                    buffer[i] = (byte)c;
+                    var b = (byte)c;
+                    buffer[i] = b;
+                    value = (value * 10) + (b - '0');
                 }
                 else
                 {
-                    throw new ArgumentException($"value contains a not digit character: {value}");
+                    throw new ArgumentException($"value contains a not digit character: {text}");
                 }
             }
 
-            this = new(true, buffer);
+            Span<byte> destination = m_Data;
+            destination[LengthIndex] = (byte)length;
+            buffer.CopyTo(destination.Slice(AsciiOffset));
+            m_Value = value;
         }
 
         /// <summary>
@@ -88,25 +105,6 @@ namespace FixStuff
             Span<byte> destination = m_Data;
             destination[LengthIndex] = (byte)slice.Length;
             slice.CopyTo(destination.Slice(AsciiOffset));
-        }
-
-        /// <summary>
-        /// Creates a tag.
-        /// We assume that the caller has done all the necessary error checking
-        /// </summary>
-        /// <param name="_"></param>
-        /// <param name="data"></param>
-        private Tag(bool _, ReadOnlySpan<byte> data)
-        {
-            var length = data.Length;
-            m_Data[LengthIndex] = (byte)length;
-
-            for(var i = 0; i < length; i++)
-            {
-                var digit = data[i];
-                m_Data[i + AsciiOffset] = digit;
-                m_Value = (m_Value * 10) + (digit - (byte)'0');
-            }
         }
 
         /// <summary>
@@ -144,7 +142,7 @@ namespace FixStuff
         /// <returns></returns>
         public string AsString()
         {
-            return string.Create(m_Data[0], this, static (span, state) =>
+            return string.Create(m_Data[LengthIndex], this, static (span, state) =>
             {
                 var length = state.Length;
 
