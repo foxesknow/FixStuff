@@ -13,8 +13,11 @@ namespace FixStuff
     public readonly partial struct Tag : IEquatable<Tag>, IComparable<Tag>, IEnumerable<byte>
     {
         private const int LengthIndex = 0;
-        private const int AsciiOffset = 1;
+        private const int TextOffset = 1;
         private const int Width = 5;
+
+        private const byte AsciiZero = (byte)'0';
+        private const byte AsciiNine= (byte)'9';
 
         public static readonly Tag None = default;
 
@@ -29,7 +32,7 @@ namespace FixStuff
         }
 
         /// <summary>
-        /// Creates a tag from an ascii encoded byte stream
+        /// Creates a tag from an ascii encoded byte stream.
         /// </summary>
         /// <param name="data"></param>
         public Tag(ReadOnlySpan<byte> data)
@@ -42,8 +45,10 @@ namespace FixStuff
             for(var i = 0; i < length; i++)
             {
                 var digit = data[i];
-                m_Data[i + AsciiOffset] = digit;
-                m_Value = (m_Value * 10) + (digit - (byte)'0');
+                ValidateAsciiByte(digit);
+
+                m_Data[i + TextOffset] = digit;
+                m_Value = (m_Value * 10) + (digit - AsciiZero);
             }
         }
 
@@ -63,23 +68,16 @@ namespace FixStuff
             Span<byte> buffer = stackalloc byte[text.Length];
             for(int i = 0; i < length; i++)
             {
-                var c = text[i];
+                var b = (byte)text[i];
+                ValidateAsciiByte(b);
 
-                if(c >= '0' && c <= '9')
-                {
-                    var b = (byte)c;
-                    buffer[i] = b;
-                    value = (value * 10) + (b - '0');
-                }
-                else
-                {
-                    throw new ArgumentException($"value contains a not digit character: {text}");
-                }
+                buffer[i] = b;
+                value = (value * 10) + (b - AsciiZero);
             }
 
             Span<byte> destination = m_Data;
             destination[LengthIndex] = (byte)length;
-            buffer.CopyTo(destination.Slice(AsciiOffset));
+            buffer.CopyTo(destination.Slice(TextOffset));
             m_Value = value;
         }
 
@@ -101,14 +99,14 @@ namespace FixStuff
             {
                 var x = value % 10;
                 value /= 10;
-                buffer[i] = (byte)(x + '0');
+                buffer[i] = (byte)(x + AsciiZero);
                 i--;
             }while(value != 0);
 
             var slice = buffer.Slice(i + 1);
             Span<byte> destination = m_Data;
             destination[LengthIndex] = (byte)slice.Length;
-            slice.CopyTo(destination.Slice(AsciiOffset));
+            slice.CopyTo(destination.Slice(TextOffset));
         }
 
         /// <summary>
@@ -119,10 +117,8 @@ namespace FixStuff
         /// <param name="action"></param>
         public void Apply<TState>(TState state, ReadOnlySpanAction<byte, TState> action)
         {
-            ReadOnlySpan<byte> data = m_Data;
-            var slice = data.Slice(AsciiOffset, m_Data[LengthIndex]);
-
-            action(slice, state);
+            ReadOnlySpan<byte> data = m_Data[TextRange];
+            action(data, state);
         }
 
         /// <summary>
@@ -132,11 +128,9 @@ namespace FixStuff
         /// <returns>The number of bytes written</returns>
         public int CopyTo(Span<byte> destination)
         {
-            ReadOnlySpan<byte> data = m_Data;
-            var slice = data.Slice(AsciiOffset, m_Data[LengthIndex]);
-
-            slice.CopyTo(destination);
-            return slice.Length;
+            ReadOnlySpan<byte> data = m_Data[TextRange];
+            data.CopyTo(destination);
+            return data.Length;
         }
 
         /// <summary>
@@ -146,13 +140,14 @@ namespace FixStuff
         /// <returns></returns>
         public string AsString()
         {
+            // We can creates the integer directly into the string buffer
             return string.Create(m_Data[LengthIndex], this, static (span, state) =>
             {
                 var length = state.Length;
 
                 for(var i = 0; i < length; i++)
                 {
-                    span[i] = (char)state.m_Data[i + AsciiOffset];
+                    span[i] = (char)state.m_Data[i + TextOffset];
                 }
             });
         }
@@ -169,7 +164,7 @@ namespace FixStuff
             {
                 if(index >= 0 && index < this.Length)
                 {
-                    return m_Data[AsciiOffset + index];
+                    return m_Data[TextOffset + index];
                 }
 
                 throw new IndexOutOfRangeException();
@@ -191,7 +186,7 @@ namespace FixStuff
         {
             for(var i = 0; i < this.Length; i++)
             {
-                yield return m_Data[AsciiOffset + i];
+                yield return m_Data[TextOffset + i];
             }
         }
 
@@ -256,14 +251,56 @@ namespace FixStuff
             return this.IsValid ? m_Value.ToString() : "<none>";
         }
 
+        /// <summary>
+        /// Compares 2 tags for equality
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
         public static bool operator==(in Tag lhs, in Tag rhs)
         {
             return lhs.IsValid == rhs.IsValid && lhs.Value == rhs.Value;
         }
 
+        /// <summary>
+        /// Compares 2 tags for inequality
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
         public static bool operator!=(in Tag lhs, in Tag rhs)
         {
             return !(lhs == rhs);
         }        
+
+        /// <summary>
+        /// Creates a tag from a string
+        /// </summary>
+        /// <param name="text"></param>
+        public static implicit operator Tag(string text)
+        {
+            return new(text);
+        }
+
+        /// <summary>
+        /// Creates a tag from an integer
+        /// </summary>
+        /// <param name="value"></param>
+        public static implicit operator Tag(int value)
+        {
+            return new(value);
+        }
+
+        private Range TextRange
+        {
+            get{return new Range(TextOffset, TextOffset + this.Length);}
+        }
+
+        private void ValidateAsciiByte(byte value)
+        {
+            if(value >= AsciiZero && value <= AsciiNine) return;
+
+            throw new ArgumentException($"not a valid ascii number code: {value}");
+        }
     }
 }

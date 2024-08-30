@@ -54,7 +54,7 @@ namespace FixStuff
             public byte Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get{return m_Tag.m_Data[m_Index + Tag.AsciiOffset];}
+                get{return m_Tag.m_Data[m_Index + Tag.TextOffset];}
             }
         }
     }

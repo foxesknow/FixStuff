@@ -105,12 +105,49 @@ namespace FixStuff
             var none = Tag.None;
             Assert.That(Tag.None != none, Is.False);
 
-            var tag1 = new Tag(12345);
-            var tag2 = new Tag(12345);
-            var tag3 = new Tag(92345);
+            Tag tag1 = 12345;
+            Tag tag2 = 12345;
+            Tag tag3 = 92345;
 
             Assert.That(tag1 != tag2, Is.False);
             Assert.That(tag1 != tag3, Is.True);
+        }
+
+        [Test]
+        [TestCase("1")]
+        [TestCase("99")]
+        public void ImplicitString(string value)
+        {
+            Tag tag = value;
+            Assert.That(tag.AsString(), Is.EqualTo(value));
+        }
+
+        [Test]
+        [TestCase(1)]
+        [TestCase(99)]
+        public void ImplicitInt(int value)
+        {
+            Tag tag = value;
+            Assert.That(tag.Value, Is.EqualTo(value));
+        }
+
+        [Test]
+        public void Apply()
+        {
+            Tag tag = "51";
+            var extract = new List<char>();
+
+            tag.Apply(extract, static(span, list) =>
+            {
+                foreach(var b in span)
+                {
+                    list.Add((char)b);
+                }
+            });
+
+            Assert.That(extract, Has.Count.EqualTo(2));
+            Assert.That(extract[0], Is.EqualTo('5'));
+            Assert.That(extract[1], Is.EqualTo('1'));
         }
 
         private static IEnumerable<TestCaseData> IntTestCases()
