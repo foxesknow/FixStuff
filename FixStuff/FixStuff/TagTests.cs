@@ -85,6 +85,34 @@ namespace FixStuff
 
         }
 
+        [Test]
+        public void Equality()
+        {
+            var none = Tag.None;
+            Assert.That(Tag.None == none, Is.True);
+
+            var tag1 = new Tag(12345);
+            var tag2 = new Tag(12345);
+            var tag3 = new Tag(92345);
+
+            Assert.That(tag1 == tag2, Is.True);
+            Assert.That(tag1 == tag3, Is.False);
+        }
+
+        [Test]
+        public void Inequality()
+        {
+            var none = Tag.None;
+            Assert.That(Tag.None != none, Is.False);
+
+            var tag1 = new Tag(12345);
+            var tag2 = new Tag(12345);
+            var tag3 = new Tag(92345);
+
+            Assert.That(tag1 != tag2, Is.False);
+            Assert.That(tag1 != tag3, Is.True);
+        }
+
         private static IEnumerable<TestCaseData> IntTestCases()
         {
             return TagValues().Select(i => new TestCaseData(i));

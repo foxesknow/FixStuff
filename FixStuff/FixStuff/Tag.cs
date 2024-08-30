@@ -6,6 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace FixStuff
 {
+    /// <summary>
+    /// Models a FIX tag.
+    /// It's assumed that FIX tags are from 0 to 99999 inclusives
+    /// </summary>
     public readonly partial struct Tag : IEquatable<Tag>, IComparable<Tag>, IEnumerable<byte>
     {
         private const int LengthIndex = 0;
