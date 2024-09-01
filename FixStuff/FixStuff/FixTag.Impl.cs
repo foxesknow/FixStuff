@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace FixStuff
 {
-    public readonly partial struct Tag
+    public readonly partial struct FixTag
     {
         /// <summary>
         /// Used to hold the tag information
@@ -24,13 +24,13 @@ namespace FixStuff
         /// </summary>
         public ref struct Enumerator
         {
-            private readonly Tag m_Tag;
+            private readonly FixTag m_Tag;
             private int m_Index;
 
             /// <summary>Initialize the enumerator.</summary>
             /// <param name="span">The span to enumerate.</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal Enumerator(Tag tag)
+            internal Enumerator(FixTag tag)
             {
                 m_Tag = tag;
                 m_Index = -1;
@@ -54,7 +54,7 @@ namespace FixStuff
             public byte Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get{return m_Tag.m_Data[m_Index + Tag.TextOffset];}
+                get{return m_Tag.m_Data[m_Index + FixTag.TextOffset];}
             }
         }
     }

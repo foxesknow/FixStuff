@@ -10,7 +10,7 @@ namespace FixStuff
     /// Models a FIX tag.
     /// It's assumed that FIX tags are from 0 to 99999 inclusives
     /// </summary>
-    public readonly partial struct Tag : IEquatable<Tag>, IComparable<Tag>, IEnumerable<byte>
+    public readonly partial struct FixTag : IEquatable<FixTag>, IComparable<FixTag>, IEnumerable<byte>
     {
         private const int LengthIndex = 0;
         private const int TextOffset = 1;
@@ -19,7 +19,7 @@ namespace FixStuff
         private const byte AsciiZero = (byte)'0';
         private const byte AsciiNine= (byte)'9';
 
-        public static readonly Tag None = default;
+        public static readonly FixTag None = default;
 
         private readonly EncodedData m_Data;
         private readonly int m_Value;
@@ -27,7 +27,7 @@ namespace FixStuff
         /// <summary>
         /// Creates a tag which is not valid
         /// </summary>
-        public Tag()
+        public FixTag()
         {
         }
 
@@ -35,7 +35,7 @@ namespace FixStuff
         /// Creates a tag from an ascii encoded byte stream.
         /// </summary>
         /// <param name="data"></param>
-        public Tag(ReadOnlySpan<byte> data)
+        public FixTag(ReadOnlySpan<byte> data)
         {
             if(data.Length > Width) throw new ArgumentException("only values 0 to 99999 supported");
             
@@ -57,7 +57,7 @@ namespace FixStuff
         /// </summary>
         /// <param name="text"></param>
         /// <exception cref="ArgumentException"></exception>
-        public Tag(string text)
+        public FixTag(string text)
         {
             ArgumentException.ThrowIfNullOrEmpty(text, nameof(text));
 
@@ -86,7 +86,7 @@ namespace FixStuff
         /// </summary>
         /// <param name="value"></param>
         /// <exception cref="ArgumentException"></exception>
-        public Tag(int value)
+        public FixTag(int value)
         {
             if(value < 0 || value > 99999) throw new ArgumentException($"invalid tag value: {value}");
 
@@ -222,13 +222,13 @@ namespace FixStuff
         }
 
         /// <inheritdoc/>
-        public int CompareTo(Tag other)
+        public int CompareTo(FixTag other)
         {
             return (this.IsValid, m_Value).CompareTo((other.IsValid, other.Value));
         }
 
         /// <inheritdoc/>
-        public bool Equals(Tag other)
+        public bool Equals(FixTag other)
         {
             return this.IsValid == other.IsValid && m_Value == other.m_Value;
         }
@@ -236,7 +236,7 @@ namespace FixStuff
         /// <inheritdoc/>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is Tag tag && Equals(tag);
+            return obj is FixTag tag && Equals(tag);
         }
 
         /// <inheritdoc/>
@@ -248,7 +248,7 @@ namespace FixStuff
         /// <inheritdoc/>
         public override string ToString()
         {
-            return this.IsValid ? m_Value.ToString() : "<none>";
+            return this.IsValid ? AsString() : "<none>";
         }
 
         /// <summary>
@@ -257,7 +257,7 @@ namespace FixStuff
         /// <param name="lhs"></param>
         /// <param name="rhs"></param>
         /// <returns></returns>
-        public static bool operator==(in Tag lhs, in Tag rhs)
+        public static bool operator==(in FixTag lhs, in FixTag rhs)
         {
             return lhs.IsValid == rhs.IsValid && lhs.Value == rhs.Value;
         }
@@ -268,7 +268,7 @@ namespace FixStuff
         /// <param name="lhs"></param>
         /// <param name="rhs"></param>
         /// <returns></returns>
-        public static bool operator!=(in Tag lhs, in Tag rhs)
+        public static bool operator!=(in FixTag lhs, in FixTag rhs)
         {
             return !(lhs == rhs);
         }        
@@ -277,7 +277,7 @@ namespace FixStuff
         /// Creates a tag from a string
         /// </summary>
         /// <param name="text"></param>
-        public static implicit operator Tag(string text)
+        public static implicit operator FixTag(string text)
         {
             return new(text);
         }
@@ -286,7 +286,7 @@ namespace FixStuff
         /// Creates a tag from an integer
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator Tag(int value)
+        public static implicit operator FixTag(int value)
         {
             return new(value);
         }
