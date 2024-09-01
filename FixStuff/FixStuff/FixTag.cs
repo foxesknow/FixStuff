@@ -248,7 +248,7 @@ namespace FixStuff
         /// <inheritdoc/>
         public override string ToString()
         {
-            return this.IsValid ? AsString() : "<none>";
+            return this.IsValid ? AsString() : "<invalid>";
         }
 
         /// <summary>
